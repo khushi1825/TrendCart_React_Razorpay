@@ -35,7 +35,7 @@ const Home = () => {
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Featured Collection</h2>
         <div className="products-grid">
           {featuredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product._id} product={product} />
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
