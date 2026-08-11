@@ -419,37 +419,220 @@ export const AppProvider = ({ children }) => {
   // We will REMOVE this when we implement Razorpay.
   // =====================================================
 
-  const placeOrder = () => {
-    if (cart.length === 0) {
+  
+
+  // =====================================================
+// RAZORPAY PAYMENT
+// =====================================================
+
+const placeOrder = async () => {
+  if (!user) {
+    alert('Please login before placing an order.');
+    return;
+  }
+
+  if (cart.length === 0) {
+    alert('Your cart is empty.');
+    return;
+  }
+
+  try {
+    // ============================================
+    // STEP 1: CREATE ORDER ON OUR BACKEND
+    // ============================================
+
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('Please login again.');
       return;
     }
 
-    const newOrder = {
-      id: uuidv4(),
+    const response = await fetch(
+      `${API_URL}/api/orders/create`,
+      {
+        method: 'POST',
 
-      items: cart,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
 
-      total: cart.reduce(
-        (sum, item) =>
-          sum + item.price * item.quantity,
-        0
-      ),
+        body: JSON.stringify({
+          items: cart
+        })
+      }
+    );
 
-      orderedAt:
-        new Date().toLocaleString()
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to create payment order'
+      );
+    }
+
+    console.log(
+      'Razorpay order created:',
+      data
+    );
+
+    // ============================================
+    // STEP 2: OPEN RAZORPAY CHECKOUT
+    // ============================================
+
+    const options = {
+      key: data.key,
+
+      amount: data.amount,
+
+      currency: data.currency,
+
+      name: 'TrendCart',
+
+      description: 'Women Fashion Order',
+
+      order_id: data.razorpayOrderId,
+
+      handler: async function (paymentResponse) {
+
+        console.log(
+          'Razorpay payment response:',
+          paymentResponse
+        );
+
+        // ========================================
+        // STEP 3: VERIFY PAYMENT ON BACKEND
+        // ========================================
+
+        try {
+
+          const verifyResponse = await fetch(
+            `${API_URL}/api/orders/verify`,
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+
+              body: JSON.stringify({
+                razorpay_payment_id:
+                  paymentResponse.razorpay_payment_id,
+
+                razorpay_order_id:
+                  paymentResponse.razorpay_order_id,
+
+                razorpay_signature:
+                  paymentResponse.razorpay_signature
+              })
+            }
+          );
+
+          const verifyData =
+            await verifyResponse.json();
+
+          if (!verifyResponse.ok) {
+            throw new Error(
+              verifyData.error ||
+              'Payment verification failed'
+            );
+          }
+
+          // ======================================
+          // PAYMENT SUCCESS
+          // ======================================
+
+          console.log(
+            'Payment verified:',
+            verifyData
+          );
+
+          // Add verified order to React state
+          setOrders(prev => [
+            verifyData.order,
+            ...prev
+          ]);
+
+          // Clear cart
+          setCart([]);
+
+          alert(
+            '✅ Payment successful! Your order has been placed.'
+          );
+
+        } catch (error) {
+
+          console.error(
+            'Payment verification error:',
+            error
+          );
+
+          alert(
+            'Payment was completed, but verification failed. Please contact support.'
+          );
+        }
+      },
+
+      prefill: {
+        name: user.name || '',
+        email: user.email || ''
+      },
+
+      theme: {
+        color: '#25671E'
+      }
     };
 
-    setOrders(prev => [
-      newOrder,
-      ...prev
-    ]);
+    // ============================================
+    // CHECK RAZORPAY IS LOADED
+    // ============================================
 
-    setCart([]);
-  };
+    if (!window.Razorpay) {
+      alert(
+        'Razorpay failed to load. Please refresh the page.'
+      );
+      return;
+    }
 
-  // =====================================================
-  // CONTEXT
-  // =====================================================
+    // ============================================
+    // OPEN CHECKOUT
+    // ============================================
+
+    const razorpay =
+      new window.Razorpay(options);
+
+    razorpay.on(
+      'payment.failed',
+      function (response) {
+
+        console.error(
+          'Payment failed:',
+          response.error
+        );
+
+        alert(
+          '❌ Payment failed. Please try again.'
+        );
+      }
+    );
+
+    razorpay.open();
+
+  } catch (error) {
+
+    console.error(
+      'Place order error:',
+      error
+    );
+
+    alert(
+      error.message ||
+      'Something went wrong while creating the payment.'
+    );
+  }
+};
 
   return (
     <AppContext.Provider

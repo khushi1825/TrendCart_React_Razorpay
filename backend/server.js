@@ -1,11 +1,17 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+
+
 const productRoutes = require('./routes/product');
+const votingRoutes = require('./routes/voting');
+const orderRoutes = require('./routes/order');
+const authRoutes = require('./routes/auth');
 
 
-require('dotenv').config();
+//require('dotenv').config();
 
 const app = express();
 
@@ -22,6 +28,10 @@ app.use(express.json());
 // ============================================
 
 app.use('/api/products', productRoutes);
+app.use('/api/voting', votingRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api', authRoutes);
+
 
 // ============================================
 // MONGODB CONNECTION
@@ -39,101 +49,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // USER MODEL
 // ============================================
 
-const userSchema = new mongoose.Schema({
-  name: String,
-
-  email: {
-    type: String,
-    unique: true
-  },
-
-  password: String
-});
-
-const User = mongoose.model('User', userSchema);
-
-// ============================================
-// SIGNUP
-// ============================================
-
-app.post('/api/signup', async (req, res) => {
-  try {
-
-    const { name, email, password } = req.body;
-
-    const existing = await User.findOne({ email });
-
-    if (existing) {
-      return res.status(400).json({
-        error: 'User already exists'
-      });
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password
-    });
-
-    res.json({
-      success: true,
-      user
-    });
-
-  } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-// ============================================
-// LOGIN
-// ============================================
-
-app.post('/api/login', async (req, res) => {
-
-  try {
-
-    const { emailOrName, password } = req.body;
-
-    const user = await User.findOne({
-      $or: [
-        { email: emailOrName },
-        { name: emailOrName }
-      ]
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        error: 'User not found'
-      });
-    }
-
-    if (user.password !== password) {
-      return res.status(401).json({
-        error: 'Wrong password'
-      });
-    }
-
-    res.json({
-      success: true,
-      user
-    });
-
-  } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({
-      error: err.message
-    });
-  }
-
-});
+;
 
 // ============================================
 // TEST API

@@ -26,7 +26,19 @@ const Cart = () => {
       <ul className="cart-items" style={{ listStyle: 'none', padding: 0 }}>
         {cart.map(item => (
           <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'white', padding: '1rem', marginBottom: '1rem', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-            <img src={item.image} alt={item.name} style={{ width: '80px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
+            <img
+  src={
+    item.images?.[0] ||
+    'https://via.placeholder.com/80x100?text=No+Image'
+  }
+  alt={item.name}
+  style={{
+    width: '80px',
+    height: '100px',
+    objectFit: 'cover',
+    borderRadius: '8px'
+  }}
+/>
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: 0 }}>{item.name}</h3>
               <p style={{ color: '#e91e63', fontWeight: 'bold' }}>{formatINR(item.price)}</p>
@@ -43,14 +55,11 @@ const Cart = () => {
       </ul>
       <h3>Total: {formatINR(total)}</h3>
       <button
-  className="btn btn-primary"
-  style={{ marginTop: '1rem' }}
-  onClick={() => {
-    placeOrder();
-    alert('✅ Order placed successfully!');
-  }}
+        className="btn btn-primary"
+        style={{ marginTop: '1rem' }}
+        onClick={placeOrder}
 >
-  Place Order
+  Pay Now
 </button>
     </div>
   );

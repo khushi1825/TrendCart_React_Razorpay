@@ -32,7 +32,7 @@ const Vote = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {votingPosts.map(post => {
-              const counts = getVoteCounts(post.id);
+              const counts = getVoteCounts(post._id);
               const isOwner = user && post.addedBy === user.id;
               return (
                 <div key={post.id} style={{ borderBottom: '1px solid #eee', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

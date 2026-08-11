@@ -22,20 +22,32 @@ const Login = () => {
     }
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    try {
-      login(emailOrName, password);
-      if (rememberMe) {
-        localStorage.setItem('trendcart_saved_login', JSON.stringify({ emailOrName, password }));
-      } else {
-        localStorage.removeItem('trendcart_saved_login');
-      }
-      navigate('/');
-    } catch (err) {
-      setError(err.message);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+
+  try {
+    await login(emailOrName, password);
+
+    if (rememberMe) {
+      localStorage.setItem(
+        'trendcart_saved_login',
+        JSON.stringify({
+          emailOrName,
+          password
+        })
+      );
+    } else {
+      localStorage.removeItem('trendcart_saved_login');
     }
-  };
+
+    navigate('/');
+
+  } catch (err) {
+    console.error('Login error:', err);
+    setError(err.message);
+  }
+};
 
   return (
     <div className="container" style={{ maxWidth: '480px', marginTop: '3rem', marginBottom: '3rem' }}>
