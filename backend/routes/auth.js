@@ -39,10 +39,10 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email
+}
     });
 
   } catch (error) {
@@ -53,6 +53,8 @@ router.post('/signup', async (req, res) => {
     });
   }
 });
+
+
 
 // LOGIN
 router.post('/login', async (req, res) => {
@@ -93,7 +95,7 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email
       }
@@ -101,6 +103,34 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
 
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server Error'
+    });
+  }
+});
+
+// FIND USER BY EMAIL
+router.get('/user-by-email/:email', async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email);
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'Friend account not found'
+      });
+    }
+
+    res.json({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email
+    });
+
+  } catch (error) {
     console.error(error);
 
     res.status(500).json({

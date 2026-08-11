@@ -73,11 +73,19 @@ router.get('/user/:userId', async (req, res) => {
 */
 router.get('/pending/:friendId', async (req, res) => {
   try {
+    const { friendId } = req.params;
+
     const posts = await VotingPost.find({
-      'friends.friendId': req.params.friendId,
-      'votes.friendId': {
-        $ne: req.params.friendId
+      'friends.friendId': friendId,
+
+      votes: {
+        $not: {
+          $elemMatch: {
+            friendId: friendId
+          }
+        }
       }
+
     }).sort({
       createdAt: -1
     });
@@ -85,6 +93,7 @@ router.get('/pending/:friendId', async (req, res) => {
     res.json(posts);
 
   } catch (error) {
+
     console.error(
       'Get pending votes error:',
       error
@@ -164,6 +173,34 @@ router.post('/:postId/vote', async (req, res) => {
 
     res.status(500).json({
       error: 'Failed to submit vote'
+    });
+  }
+});
+
+router.delete('/:postId', async (req, res) => {
+  try {
+
+    const { postId } = req.params;
+
+    const deletedPost = await VotingPost.findByIdAndDelete(postId);
+
+    if (!deletedPost) {
+      return res.status(404).json({
+        error: 'Voting post not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Voting post removed successfully'
+    });
+
+  } catch (error) {
+
+    console.error('Delete voting post error:', error);
+
+    res.status(500).json({
+      error: 'Failed to delete voting post'
     });
   }
 });

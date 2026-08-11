@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 
@@ -6,6 +7,7 @@ const ProductCard = ({ product }) => {
     addToCart,
     addToWishlist,
     wishlist,
+    friends,
     addVotingPost
   } = useAppContext();
 
@@ -17,34 +19,26 @@ const ProductCard = ({ product }) => {
     return `₹${Number(price).toLocaleString('en-IN')}`;
   };
 
-  const handleAddForVote = () => {
+  // =====================================================
+  // ADD PRODUCT FOR VOTING
+  // =====================================================
 
-    // Add product to voting posts
-    addVotingPost(product);
+  const handleAddForVote = async () => {
 
-    // Get current user
-    const currentUser = JSON.parse(
-      localStorage.getItem('trendcart_current_user')
-    );
+    // ============================================
+    // 1. CHECK FRIENDS
+    // ============================================
 
-    // Get friends
-    const friendsList = JSON.parse(
-      localStorage.getItem(
-        `trendcart_friends_${currentUser?.id}`
-      ) || '[]'
-    );
-
-    console.log(
-      'Friends list from localStorage:',
-      friendsList
-    );
-
-    if (friendsList.length === 0) {
+    if (!friends || friends.length === 0) {
       alert(
         '❌ No friends added. Go to Friends page first!'
       );
       return;
     }
+
+    // ============================================
+    // 2. PREPARE WHATSAPP MESSAGE
+    // ============================================
 
     const votingLink =
       `${window.location.origin}/vote`;
@@ -58,20 +52,45 @@ ${product.name} has been added for voting on TrendCart!
 
 🔗 Vote here: ${votingLink}
 
-Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
+Vote options:
+
+👍 Like
+👎 Dislike
+🌟 Excellent
 
 - TrendCart 🌸`;
     };
 
-    let openedCount = 0;
+    // ============================================
+    // 3. OPEN WHATSAPP WINDOWS IMMEDIATELY
+    // ============================================
+    //
+    // IMPORTANT:
+    // window.open() is called directly from the
+    // user's button click so Chrome is less likely
+    // to block it.
+    //
 
-    friendsList.forEach(friend => {
+    const whatsappWindows = [];
 
-      let number = friend.mobile.replace(
+    friends.forEach((friend) => {
+
+      // Friend has no mobile number
+      if (!friend.mobile) {
+        console.warn(
+          `No mobile number found for ${friend.name}`
+        );
+        return;
+      }
+
+      // Remove spaces, +, -, brackets etc.
+      let number = String(friend.mobile).replace(
         /\D/g,
         ''
       );
 
+      // Add India country code
+      // if user entered a 10-digit number.
       if (number.length === 10) {
         number = '91' + number;
       }
@@ -79,25 +98,99 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
       const message =
         messageTemplate(friend.name);
 
+      // IMPORTANT:
+      // Correct WhatsApp URL
       const whatsappUrl =
-        `https://wa.me/${number}?text=${encodeURIComponent(
-          message
-        )}`;
+        `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 
-      window.open(
-        whatsappUrl,
+      // ==========================================
+      // OPEN BLANK TAB IMMEDIATELY
+      // ==========================================
+
+      const newWindow = window.open(
+        'about:blank',
         '_blank'
       );
 
-      openedCount++;
+      if (newWindow) {
+
+        whatsappWindows.push({
+          window: newWindow,
+          url: whatsappUrl,
+          friendName: friend.name
+        });
+
+      } else {
+
+        console.warn(
+          `Popup blocked for ${friend.name}`
+        );
+
+      }
     });
 
+    // ============================================
+    // 4. CREATE VOTING POST IN BACKEND
+    // ============================================
+
+    const result =
+      await addVotingPost(product);
+
+    // ============================================
+    // 5. BACKEND FAILED
+    // ============================================
+
+    if (!result) {
+
+      // Close blank tabs if voting post
+      // could not be created.
+      whatsappWindows.forEach((item) => {
+
+        try {
+          item.window.close();
+        } catch (error) {
+          console.error(error);
+        }
+
+      });
+
+      return;
+    }
+
+    // ============================================
+    // 6. BACKEND SUCCESS
+    // ============================================
+
+    whatsappWindows.forEach((item) => {
+
+      try {
+
+        item.window.location.href =
+          item.url;
+
+      } catch (error) {
+
+        console.error(
+          `Could not open WhatsApp for ${item.friendName}`,
+          error
+        );
+
+      }
+
+    });
+
+    // ============================================
+    // 7. SUCCESS MESSAGE
+    // ============================================
+
     alert(
-      `📢 "${product.name}" added for voting!\n\n` +
-      `📱 WhatsApp opened for ${openedCount} friend(s).\n\n` +
-      `👉 Click "Send" on each WhatsApp tab!`
+      "👗 Dress added successfully! ✨"
     );
   };
+
+  // =====================================================
+  // BUTTON STYLES
+  // =====================================================
 
   const btnPrimaryStyle = {
     padding: '0.5rem 1rem',
@@ -121,6 +214,10 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
     border: '1px solid #ddd'
   };
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
     <div
       style={{
@@ -132,6 +229,7 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
     >
 
       {/* Product Image */}
+
       <img
         src={
           product.images?.[0] ||
@@ -147,6 +245,7 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
       />
 
       {/* Product Information */}
+
       <div style={{ paddingTop: '1rem' }}>
 
         <h3>
@@ -167,36 +266,48 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
         </p>
 
         {/* Add to Cart */}
+
         <button
           onClick={() => addToCart(product)}
           style={btnPrimaryStyle}
+
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor =
               '#e91e63';
-            e.currentTarget.style.color = '#fff';
+
+            e.currentTarget.style.color =
+              '#fff';
           }}
+
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor =
               '#f5f5f5';
-            e.currentTarget.style.color = '#333';
+
+            e.currentTarget.style.color =
+              '#333';
           }}
         >
           Add to Cart
         </button>
 
         {/* Wishlist */}
+
         <button
           onClick={() => addToWishlist(product)}
           style={btnOutlineStyle}
+
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor =
               '#e91e63';
+
             e.currentTarget.style.color =
               '#e91e63';
           }}
+
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor =
               '#ddd';
+
             e.currentTarget.style.color =
               '#333';
           }}
@@ -207,18 +318,23 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
         </button>
 
         {/* Voting */}
+
         <button
           onClick={handleAddForVote}
           style={btnOutlineStyle}
+
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor =
               '#e91e63';
+
             e.currentTarget.style.color =
               '#e91e63';
           }}
+
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor =
               '#ddd';
+
             e.currentTarget.style.color =
               '#333';
           }}
@@ -232,3 +348,4 @@ Vote options: 👍 Like | 👎 Dislike | 🌟 Excellent
 };
 
 export default ProductCard;
+

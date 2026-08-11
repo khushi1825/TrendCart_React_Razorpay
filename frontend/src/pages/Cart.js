@@ -25,7 +25,7 @@ const Cart = () => {
       <h1 style={{ margin: '2rem 0' }}>Shopping Cart</h1>
       <ul className="cart-items" style={{ listStyle: 'none', padding: 0 }}>
         {cart.map(item => (
-          <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'white', padding: '1rem', marginBottom: '1rem', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+          <li key={item._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'white', padding: '1rem', marginBottom: '1rem', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
             <img
   src={
     item.images?.[0] ||
@@ -43,10 +43,10 @@ const Cart = () => {
               <h3 style={{ margin: 0 }}>{item.name}</h3>
               <p style={{ color: '#e91e63', fontWeight: 'bold' }}>{formatINR(item.price)}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="btn btn-sm">-</button>
+                <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="btn btn-sm">-</button>
                 <span>{item.quantity}</span>
-                <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="btn btn-sm">+</button>
-                <button onClick={() => removeFromCart(item.id)} className="btn btn-outline btn-sm">Remove</button>
+                <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="btn btn-sm">+</button>
+                <button onClick={() => removeFromCart(item._id)} className="btn btn-outline btn-sm">Remove</button>
               </div>
             </div>
             <div style={{ fontWeight: 'bold' }}>{formatINR(item.price * item.quantity)}</div>

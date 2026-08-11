@@ -5,12 +5,12 @@ import React, {
   useContext
 } from 'react';
 
-import { v4 as uuidv4 } from 'uuid';
+//import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
-const API_URL = 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const AppProvider = ({ children }) => {
   const { user } = useAuth();
@@ -103,13 +103,6 @@ export const AppProvider = ({ children }) => {
         savedFriends ? JSON.parse(savedFriends) : []
       );
 
-      const savedPosts = localStorage.getItem(
-        `trendcart_votingPosts_${user.id}`
-      );
-
-      setVotingPosts(
-        savedPosts ? JSON.parse(savedPosts) : []
-      );
 
       const savedOrders = localStorage.getItem(
         `trendcart_orders_${user.id}`
@@ -127,10 +120,97 @@ export const AppProvider = ({ children }) => {
     }
   }, [user]);
 
+
+  // ==============================
+// FETCH VOTING POSTS FROM BACKEND
+// ==============================
+
+const fetchVotingPosts = async () => {
+  if (!user) return;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/voting/user/${user.id}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to fetch voting posts'
+      );
+    }
+
+    console.log('Voting posts received:', data);
+
+    setVotingPosts(data);
+
+  } catch (error) {
+    console.error(
+      'Fetch voting posts error:',
+      error
+    );
+  }
+};
+
+
+const fetchPendingVotingPosts = async () => {
+  if (!user) return;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/voting/pending/${user.id}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to fetch pending voting posts'
+      );
+    }
+
+    console.log(
+      'Pending voting posts:',
+      data
+    );
+
+    setVotingPosts(prev => {
+      const existingIds = new Set(
+        prev.map(post => post._id)
+      );
+
+      const newPosts = data.filter(
+        post => !existingIds.has(post._id)
+      );
+
+      return [
+        ...prev,
+        ...newPosts
+      ];
+    });
+
+  } catch (error) {
+    console.error(
+      'Fetch pending voting posts error:',
+      error
+    );
+  }
+};
+
+useEffect(() => {
+  if (user) {
+    fetchVotingPosts();
+    fetchPendingVotingPosts();
+  } else {
+    setVotingPosts([]);
+  }
+}, [user]);
+
   // ==============================
   // SAVE CART
   // ==============================
-
+  
   useEffect(() => {
     if (user) {
       localStorage.setItem(
@@ -170,14 +250,7 @@ export const AppProvider = ({ children }) => {
   // SAVE VOTING POSTS
   // ==============================
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(
-        `trendcart_votingPosts_${user.id}`,
-        JSON.stringify(votingPosts)
-      );
-    }
-  }, [votingPosts, user]);
+  
 
   // ==============================
   // SAVE ORDERS
@@ -270,22 +343,52 @@ export const AppProvider = ({ children }) => {
     );
   };
 
-  // =====================================================
-  // FRIEND FUNCTIONS
-  // =====================================================
 
-  const addFriend = (name, mobile) => {
+  const addFriend = async (name, email, mobile) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/user-by-email/${encodeURIComponent(email)}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Friend account not found'
+      );
+    }
+
     const newFriend = {
-      id: uuidv4(),
-      name,
-      mobile
-    };
+  id: data.id,
+  name: data.name,
+  email: data.email,
+  mobile: mobile
+};
 
-    setFriends(prev => [
-      ...prev,
-      newFriend
-    ]);
-  };
+console.log('FRIEND ADDED:', newFriend);
+
+    setFriends(prev => {
+      // Prevent duplicate friend
+      if (prev.some(friend => friend.id === data.id)) {
+        alert('Friend already added.');
+        return prev;
+      }
+
+      return [
+        ...prev,
+        newFriend
+      ];
+    });
+
+  } catch (error) {
+    console.error('Add friend error:', error);
+
+    alert(
+      error.message ||
+      'Failed to add friend'
+    );
+  }
+};
 
   const removeFriend = (id) => {
     setFriends(prev =>
@@ -297,121 +400,235 @@ export const AppProvider = ({ children }) => {
   // VOTING FUNCTIONS
   // =====================================================
 
-  const addVotingPost = (product) => {
-    const newPost = {
-      id: uuidv4(),
+  const addVotingPost = async (product) => {
+  if (!user) {
+    alert('Please login first.');
+    return null;
+  }
 
-      productId: product._id,
+  if (friends.length === 0) {
+    alert('Please add friends first.');
+    return null;
+  }
 
-      productName: product.name,
+  try {
+    const response = await fetch(
+      `${API_URL}/api/voting`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          productName: product.name,
+          productImage: product.images?.[0] || '',
+          productPrice: product.price,
+          addedBy: user.id,
 
-      productImage: product.image,
+          friends: friends.map(friend => ({
+            friendId: friend.id,
+            friendName: friend.name
+          }))
+        })
+      }
+    );
 
-      productPrice: product.price,
+    const data = await response.json();
 
-      addedBy: user?.id || 'unknown',
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to create voting post'
+      );
+    }
 
-      timestamp: Date.now(),
+    console.log('Voting post created:', data);
 
-      votes: {}
-    };
-
+    // Add backend post to frontend state
     setVotingPosts(prev => [
-      ...prev,
-      newPost
+      data,
+      ...prev
     ]);
 
-    return newPost;
-  };
+    return data;
 
-  const removeVotingPost = (postId) => {
+  } catch (error) {
+    console.error(
+      'Add voting post error:',
+      error
+    );
+
+    alert(
+      error.message ||
+      'Failed to add dress for voting'
+    );
+
+    return null;
+  }
+};
+
+  const removeVotingPost = async (postId) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/voting/${postId}`,
+      {
+        method: 'DELETE'
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to delete voting post'
+      );
+    }
+
     setVotingPosts(prev =>
       prev.filter(
-        post => post.id !== postId
+        post => post._id !== postId
       )
     );
-  };
 
-  const voteOnPost = (
-    postId,
-    friendId,
-    voteValue
-  ) => {
-    setVotingPosts(prev =>
-      prev.map(post => {
-        if (post.id === postId) {
-          const updatedVotes = {
-            ...post.votes
-          };
-
-          updatedVotes[friendId] = {
-            vote: voteValue,
-            votedAt: Date.now()
-          };
-
-          return {
-            ...post,
-            votes: updatedVotes
-          };
-        }
-
-        return post;
-      })
+  } catch (error) {
+    console.error(
+      'Remove voting post error:',
+      error
     );
-  };
+
+    alert(
+      error.message ||
+      'Failed to remove dress'
+    );
+  }
+};
+
+  const voteOnPost = async (
+  postId,
+  friendId,
+  voteValue,
+  friendName
+) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/voting/${postId}/vote`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          friendId,
+          friendName,
+          vote: voteValue
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to submit vote'
+      );
+    }
+
+    console.log('Vote saved:', data);
+
+    // Update frontend state
+    setVotingPosts(prev =>
+      prev.map(post =>
+        post._id === data.post._id
+          ? data.post
+          : post
+      )
+    );
+
+    return data;
+
+  } catch (error) {
+    console.error(
+      'Vote error:',
+      error
+    );
+
+    alert(
+      error.message ||
+      'Failed to submit vote'
+    );
+  }
+};
 
   const getFriendVoteStatus = (
-    postId,
-    friendId
-  ) => {
-    const post = votingPosts.find(
-      p => p.id === postId
-    );
+  postId,
+  friendId
+) => {
+  const post = votingPosts.find(
+    p => p._id === postId
+  );
 
-    return (
-      post?.votes?.[friendId]?.vote || null
-    );
-  };
+  if (!post) {
+    return null;
+  }
 
-  const getPendingVotesForFriend = (
-    friendId
-  ) => {
-    return votingPosts.filter(
-      post => !post.votes?.[friendId]
-    );
+  const vote = post.votes?.find(
+  v => String(v.friendId) === String(friendId)
+);
+
+  return vote?.vote || null;
+};
+
+  const getPendingVotesForFriend = (friendId) => {
+
+    return votingPosts.filter(post => {
+
+      // Is this user actually invited to vote?
+      const isRecipient = post.friends?.some(
+        friend => String(friend.friendId) === String(friendId)
+      );
+
+      // Has this user already voted?
+      const alreadyVoted = post.votes?.some(
+        vote => String(vote.friendId) === String(friendId)
+      );
+
+      return isRecipient && !alreadyVoted;
+    });
+
   };
 
   const getVoteCounts = (postId) => {
-    const post = votingPosts.find(
-      p => p.id === postId
-    );
+  const post = votingPosts.find(
+    p => p._id === postId
+  );
 
-    if (!post) {
-      return {
-        like: 0,
-        dislike: 0,
-        excellent: 0
-      };
-    }
-
-    const counts = {
+  if (!post) {
+    return {
       like: 0,
       dislike: 0,
       excellent: 0
     };
+  }
 
-    Object.values(post.votes || {}).forEach(vote => {
-      if (vote.vote === 'like') {
-        counts.like++;
-      } else if (vote.vote === 'dislike') {
-        counts.dislike++;
-      } else if (vote.vote === 'excellent') {
-        counts.excellent++;
-      }
-    });
-
-    return counts;
+  const counts = {
+    like: 0,
+    dislike: 0,
+    excellent: 0
   };
+
+  // Backend votes is an ARRAY
+  (post.votes || []).forEach(vote => {
+    if (vote.vote === 'like') {
+      counts.like++;
+    } else if (vote.vote === 'dislike') {
+      counts.dislike++;
+    } else if (vote.vote === 'excellent') {
+      counts.excellent++;
+    }
+  });
+
+  return counts;
+};
 
   // =====================================================
   // TEMPORARY ORDER FUNCTION
@@ -636,6 +853,8 @@ const placeOrder = async () => {
 
   return (
     <AppContext.Provider
+
+    
       value={{
         // Products
         products,
@@ -676,7 +895,9 @@ const placeOrder = async () => {
         setSearchTerm
       }}
     >
+
       {children}
+
     </AppContext.Provider>
   );
 };

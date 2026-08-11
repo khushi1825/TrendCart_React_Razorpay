@@ -2,23 +2,27 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
-const AddFriends = () => {
+  const AddFriends = () => {
   const { friends, addFriend, removeFriend } = useAppContext();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
 
   const handleSubmit = (e) => {
   e.preventDefault();
-  if (name.trim() && mobile.trim()) {
-    addFriend(name, mobile);
+
+  if (
+    name.trim() &&
+    email.trim() &&
+    mobile.trim()
+  ) {
+    addFriend(name, email, mobile);
+
     setName('');
+    setEmail('');
     setMobile('');
-    
-    // DEBUG: Check if saved
-    const friends = JSON.parse(localStorage.getItem('trendcart_friends') || '[]');
-    console.log('Friends after add:', friends);
   } else {
-    alert('Please enter both name and mobile number');
+    alert('Please enter name, email and mobile number');
   }
 };
 
@@ -29,13 +33,37 @@ const AddFriends = () => {
         <h3>Add New Friend</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Mobile Number</label>
-            <input type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
-          </div>
+              <label>Friend Name</label>
+
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Friend Email</label>
+
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Friend Mobile Number</label>
+
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="10 digit mobile number"
+                required
+              />
+            </div>
           <button type="submit" className="btn btn-primary">Add Friend</button>
         </form>
       </div>
@@ -48,7 +76,7 @@ const AddFriends = () => {
           {friends.map(friend => (
             <li key={friend.id} className="friend-item">
               <div>
-                <strong>{friend.name}</strong> 📞 {friend.mobile}
+                <strong>{friend.name}</strong> 📧 {friend.email}
               </div>
               <button onClick={() => removeFriend(friend.id)} className="btn btn-outline btn-sm">Remove</button>
             </li>
