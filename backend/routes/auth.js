@@ -6,12 +6,14 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// =====================================================
 // SIGNUP
+// =====================================================
+
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check existing user
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -20,34 +22,38 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await User.create({
       name,
       email,
       password: hashedPassword
     });
 
-    // JWT Token
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    // Store JWT in HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false, // true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
     res.status(201).json({
-      token,
       user: {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email
-}
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
+      }
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('Signup error:', error);
 
     res.status(500).json({
       error: 'Server Error'
@@ -56,11 +62,12 @@ router.post('/signup', async (req, res) => {
 });
 
 
-
+// =====================================================
 // LOGIN
+// =====================================================
+
 router.post('/login', async (req, res) => {
   try {
-
     const { emailOrName, password } = req.body;
 
     const user = await User.findOne({
@@ -93,8 +100,17 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Store JWT in HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false, // true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    // IMPORTANT:
+    // token is NOT returned to frontend
     res.json({
-      token,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -103,8 +119,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-
-    console.error(error);
+    console.error('Login error:', error);
 
     res.status(500).json({
       error: 'Server Error'
@@ -112,7 +127,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax'
+  });
+
+  res.json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+});
+
+
+// =====================================================
 // FIND USER BY EMAIL
+// =====================================================
+
 router.get('/user-by-email/:email', async (req, res) => {
   try {
     const email = decodeURIComponent(req.params.email);
@@ -132,7 +169,7 @@ router.get('/user-by-email/:email', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('Find user error:', error);
 
     res.status(500).json({
       error: 'Server Error'
@@ -140,7 +177,11 @@ router.get('/user-by-email/:email', async (req, res) => {
   }
 });
 
+
+// =====================================================
 // GET CURRENT LOGGED-IN USER
+// =====================================================
+
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
@@ -161,12 +202,16 @@ router.get('/me', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error(
+      'Get current user error:',
+      error
+    );
 
     res.status(500).json({
       error: 'Failed to fetch user'
     });
   }
 });
+
 
 module.exports = router;

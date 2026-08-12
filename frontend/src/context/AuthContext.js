@@ -7,9 +7,12 @@ import React, {
 
 const AuthContext = createContext();
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:5000';
 
 export const AuthProvider = ({ children }) => {
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,59 +21,72 @@ export const AuthProvider = ({ children }) => {
   // ============================================
 
   useEffect(() => {
-  const token = localStorage.getItem('token');
 
-  if (!token) {
-    setLoading(false);
-    return;
-  }
+    const verifyUser = async () => {
 
-  const verifyUser = async () => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
+      try {
+
+        const response = await fetch(
+          `${API_URL}/api/me`,
+          {
+            method: 'GET',
+            credentials: 'include'
           }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          setUser(null);
+          return;
         }
-      );
 
-      const data = await response.json();
+        setUser(data.user);
 
-      if (!response.ok) {
-        localStorage.removeItem('token');
+      } catch (error) {
+
+        console.error(
+          'Session verification error:',
+          error
+        );
+
         setUser(null);
-        return;
+
+      } finally {
+
+        setLoading(false);
+
       }
+    };
 
-      setUser(data.user);
-    } catch (error) {
-      console.error('Session verification error:', error);
-      localStorage.removeItem('token');
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    verifyUser();
 
-  verifyUser();
-}, []);
+  }, []);
 
   // ============================================
   // SIGNUP
   // ============================================
 
-  const signup = async (email, password, name) => {
+  const signup = async (
+    email,
+    password,
+    name
+  ) => {
+
     try {
+
       const response = await fetch(
         `${API_URL}/api/signup`,
         {
           method: 'POST',
 
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type':
+              'application/json'
           },
+
+          credentials: 'include',
 
           body: JSON.stringify({
             name,
@@ -80,33 +96,34 @@ export const AuthProvider = ({ children }) => {
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
+
         throw new Error(
-          data.error || 'Signup failed'
+          data.error ||
+          'Signup failed'
         );
+
       }
 
-      // Save JWT
-      localStorage.setItem(
-        'token',
-        data.token
-      );
-
-      
+      // JWT is now stored
+      // in HttpOnly cookie by backend
 
       setUser(data.user);
 
       return data.user;
 
     } catch (error) {
+
       console.error(
         'Signup error:',
         error
       );
 
       throw error;
+
     }
   };
 
@@ -118,15 +135,20 @@ export const AuthProvider = ({ children }) => {
     emailOrName,
     password
   ) => {
+
     try {
+
       const response = await fetch(
         `${API_URL}/api/login`,
         {
           method: 'POST',
 
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type':
+              'application/json'
           },
+
+          credentials: 'include',
 
           body: JSON.stringify({
             emailOrName,
@@ -135,40 +157,33 @@ export const AuthProvider = ({ children }) => {
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
+
         throw new Error(
-          data.error || 'Login failed'
+          data.error ||
+          'Login failed'
         );
+
       }
 
-      // ========================================
-      // SAVE JWT
-      // ========================================
-
-      localStorage.setItem(
-        'token',
-        data.token
-      );
-
-      // ========================================
-      // SAVE USER
-      // ========================================
-
-      
+      // No localStorage token
 
       setUser(data.user);
 
       return data.user;
 
     } catch (error) {
+
       console.error(
         'Login error:',
         error
       );
 
       throw error;
+
     }
   };
 
@@ -176,12 +191,30 @@ export const AuthProvider = ({ children }) => {
   // LOGOUT
   // ============================================
 
-  const logout = () => {
+  const logout = async () => {
 
-    localStorage.removeItem('token');
+    try {
 
-    
-    setUser(null);
+      await fetch(
+        `${API_URL}/api/logout`,
+        {
+          method: 'POST',
+          credentials: 'include'
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        'Logout error:',
+        error
+      );
+
+    } finally {
+
+      setUser(null);
+
+    }
   };
 
   return (

@@ -14,7 +14,7 @@ const Signup = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError("Passwords don't match");
@@ -25,7 +25,7 @@ const Signup = () => {
       return;
     }
     try {
-      signup(email, password, name);
+      await signup(email, password, name);
       navigate('/');
     } catch (err) {
       setError(err.message);

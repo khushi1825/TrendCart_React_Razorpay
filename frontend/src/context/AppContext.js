@@ -104,9 +104,7 @@ export const AppProvider = ({ children }) => {
       const response = await fetch(
         `${API_URL}/api/cart/${user.id}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          credentials: 'include'
         }
       );
 
@@ -147,7 +145,7 @@ export const AppProvider = ({ children }) => {
 
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        credentials: 'include'
       },
 
       body: JSON.stringify({
@@ -381,9 +379,10 @@ export const AppProvider = ({ children }) => {
 
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
       },
 
+      credentials: 'include',
+      
       body: JSON.stringify({
         productId: product._id,
         name: product.name,
@@ -504,10 +503,7 @@ export const AppProvider = ({ children }) => {
       const response = await fetch(
         `${API_URL}/api/friends`,
         {
-          headers: {
-            Authorization:
-              `Bearer ${token}`
-          }
+          credentials: 'include'
         }
       );
 
@@ -559,10 +555,9 @@ export const AppProvider = ({ children }) => {
           headers: {
             'Content-Type':
               'application/json',
-
-            Authorization:
-              `Bearer ${token}`
           },
+
+          credentials: 'include',
 
           body: JSON.stringify({
             email,
@@ -633,11 +628,8 @@ export const AppProvider = ({ children }) => {
         `${API_URL}/api/friends/${id}`,
         {
           method: 'DELETE',
-
-          headers: {
-            Authorization:
-              `Bearer ${token}`
-          }
+          credentials: 'include'
+  
         }
       );
 

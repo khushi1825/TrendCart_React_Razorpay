@@ -6,6 +6,7 @@ const ProductCard = ({ product }) => {
   const {
     addToCart,
     addToWishlist,
+    removeFromWishlist,
     wishlist,
     friends,
     addVotingPost
@@ -26,11 +27,11 @@ const ProductCard = ({ product }) => {
   const handleAddForVote = async () => {
 
       console.log("========== VOTE DEBUG ==========");
-  console.log("PRODUCT RECEIVED BY PRODUCT CARD:", product);
-  console.log("PRODUCT ID:", product._id);
-  console.log("PRODUCT NAME:", product.name);
-  console.log("PRODUCT IMAGE:", product.images?.[0]);
-  console.log("================================");
+      console.log("PRODUCT RECEIVED BY PRODUCT CARD:", product);
+      console.log("PRODUCT ID:", product._id);
+      console.log("PRODUCT NAME:", product.name);
+      console.log("PRODUCT IMAGE:", product.images?.[0]);
+      console.log("================================");
     // ============================================
     // 1. CHECK FRIENDS
     // ============================================
@@ -299,29 +300,35 @@ Vote options:
         {/* Wishlist */}
 
         <button
-          onClick={() => addToWishlist(product)}
-          style={btnOutlineStyle}
+              onClick={() => {
+                if (isWishlisted) {
+                  removeFromWishlist(product._id);
+                } else {
+                  addToWishlist(product);
+                }
+              }}
+              style={btnOutlineStyle}
 
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor =
-              '#e91e63';
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor =
+                  '#e91e63';
 
-            e.currentTarget.style.color =
-              '#e91e63';
-          }}
+                e.currentTarget.style.color =
+                  '#e91e63';
+              }}
 
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor =
-              '#ddd';
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor =
+                  '#ddd';
 
-            e.currentTarget.style.color =
-              '#333';
-          }}
-        >
-          {isWishlisted
-            ? '❤️ Added'
-            : '🤍 Wishlist'}
-        </button>
+                e.currentTarget.style.color =
+                  '#333';
+              }}
+            >
+              {isWishlisted
+                ? '❤️ Remove'
+                : '🤍 Wishlist'}
+          </button>
 
         {/* Voting */}
 
