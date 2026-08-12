@@ -492,129 +492,140 @@ export const AppProvider = ({ children }) => {
   // =====================================================
 
   const fetchFriends = async () => {
-    if (!user) {
-      setFriends([]);
-      return;
-    }
+  if (!user) {
+    setFriends([]);
+    return;
+  }
 
-    try {
-      const token = getToken();
+  try {
+    const token =
+      localStorage.getItem('token');
 
-      const response = await fetch(
-        `${API_URL}/api/friends`,
-        {
-          credentials: 'include'
+    console.log(
+      'FETCH FRIENDS TOKEN EXISTS:',
+      !!token
+    );
+
+    const response = await fetch(
+      `${API_URL}/api/friends`,
+      {
+        method: 'GET',
+
+        headers: {
+          Authorization:
+            `Bearer ${token}`
         }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            'Failed to fetch friends'
-        );
       }
+    );
 
-      const formattedFriends =
-        data.map(friend => ({
-          id: friend.friendId,
-          name: friend.name,
-          email: friend.email,
-          mobile: friend.mobile
-        }));
+    const data =
+      await response.json();
 
-      setFriends(formattedFriends);
-
-    } catch (error) {
-      console.error(
-        'Fetch friends error:',
-        error
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        'Failed to fetch friends'
       );
     }
-  };
+
+    const formattedFriends =
+      data.map(friend => ({
+        id: friend.friendId,
+        name: friend.name,
+        email: friend.email,
+        mobile: friend.mobile
+      }));
+
+    setFriends(formattedFriends);
+
+  } catch (error) {
+    console.error(
+      'Fetch friends error:',
+      error
+    );
+  }
+};
 
   const addFriend = async (
-    name,
-    email,
-    mobile
-  ) => {
-    if (!user) {
-      alert('Please login first.');
-      return null;
-    }
+  name,
+  email,
+  mobile
+) => {
 
-    try {
-      const token = getToken();
+  if (!user) {
+    alert('Please login first.');
+    return null;
+  }
 
-      const response = await fetch(
-        `${API_URL}/api/friends`,
-        {
-          method: 'POST',
+  try {
 
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
+    const token =
+      localStorage.getItem('token');
 
-          credentials: 'include',
+    console.log(
+      'ADD FRIEND TOKEN EXISTS:',
+      !!token
+    );
 
-          body: JSON.stringify({
-            email,
-            mobile
-          })
-        }
-      );
+    const response = await fetch(
+      `${API_URL}/api/friends`,
+      {
+        method: 'POST',
 
-      const data = await response.json();
+        headers: {
+          'Content-Type':
+            'application/json',
 
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            'Failed to add friend'
-        );
+          Authorization:
+            `Bearer ${token}`
+        },
+
+        body: JSON.stringify({
+          email,
+          mobile
+        })
       }
+    );
 
-      const newFriend = {
-        id: data.friendId,
-        name: data.name,
-        email: data.email,
-        mobile: data.mobile
-      };
+    const data =
+      await response.json();
 
-      setFriends(prev => {
-        const exists = prev.some(
-          friend =>
-            String(friend.id) ===
-            String(newFriend.id)
-        );
-
-        if (exists) {
-          return prev;
-        }
-
-        return [
-          newFriend,
-          ...prev
-        ];
-      });
-
-      return newFriend;
-
-    } catch (error) {
-      console.error(
-        'Add friend error:',
-        error
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        'Failed to add friend'
       );
-
-      alert(
-        error.message ||
-          'Failed to add friend'
-      );
-
-      return null;
     }
-  };
+
+    const newFriend = {
+      id: data.friendId,
+      name: data.name,
+      email: data.email,
+      mobile: data.mobile
+    };
+
+    setFriends(prev => [
+      newFriend,
+      ...prev
+    ]);
+
+    return newFriend;
+
+  } catch (error) {
+
+    console.error(
+      'Add friend error:',
+      error
+    );
+
+    alert(
+      error.message ||
+      'Failed to add friend'
+    );
+
+    return null;
+  }
+};
 
   const removeFriend = async id => {
     if (!user) {

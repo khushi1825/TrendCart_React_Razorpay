@@ -12,7 +12,6 @@ const API_URL =
   'http://localhost:5000';
 
 export const AuthProvider = ({ children }) => {
-
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,23 +20,43 @@ export const AuthProvider = ({ children }) => {
   // ============================================
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+
+    console.log('AUTH TOKEN EXISTS:', !!token);
+    console.log('API URL:', API_URL);
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     const verifyUser = async () => {
-
       try {
-
         const response = await fetch(
           `${API_URL}/api/me`,
           {
             method: 'GET',
-            credentials: 'include'
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
         );
 
-        const data =
-          await response.json();
+        const data = await response.json();
+
+        console.log(
+          'ME STATUS:',
+          response.status
+        );
+
+        console.log(
+          'ME RESPONSE:',
+          data
+        );
 
         if (!response.ok) {
+          // Token is actually invalid/expired
+          localStorage.removeItem('token');
           setUser(null);
           return;
         }
@@ -45,18 +64,17 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
 
       } catch (error) {
-
         console.error(
           'Session verification error:',
           error
         );
 
-        setUser(null);
-
+        // IMPORTANT:
+        // Don't immediately remove token because
+        // temporary network/server errors shouldn't
+        // log the user out.
       } finally {
-
         setLoading(false);
-
       }
     };
 
@@ -74,57 +92,40 @@ export const AuthProvider = ({ children }) => {
     name
   ) => {
 
-    try {
+    const response = await fetch(
+      `${API_URL}/api/signup`,
+      {
+        method: 'POST',
 
-      const response = await fetch(
-        `${API_URL}/api/signup`,
-        {
-          method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
 
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          credentials: 'include',
-
-          body: JSON.stringify({
-            name,
-            email,
-            password
-          })
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-
-        throw new Error(
-          data.error ||
-          'Signup failed'
-        );
-
+        body: JSON.stringify({
+          name,
+          email,
+          password
+        })
       }
+    );
 
-      // JWT is now stored
-      // in HttpOnly cookie by backend
+    const data = await response.json();
 
-      setUser(data.user);
-
-      return data.user;
-
-    } catch (error) {
-
-      console.error(
-        'Signup error:',
-        error
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Signup failed'
       );
-
-      throw error;
-
     }
+
+    localStorage.setItem(
+      'token',
+      data.token
+    );
+
+    setUser(data.user);
+
+    return data.user;
   };
 
   // ============================================
@@ -136,85 +137,54 @@ export const AuthProvider = ({ children }) => {
     password
   ) => {
 
-    try {
+    const response = await fetch(
+      `${API_URL}/api/login`,
+      {
+        method: 'POST',
 
-      const response = await fetch(
-        `${API_URL}/api/login`,
-        {
-          method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
 
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          credentials: 'include',
-
-          body: JSON.stringify({
-            emailOrName,
-            password
-          })
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-
-        throw new Error(
-          data.error ||
-          'Login failed'
-        );
-
+        body: JSON.stringify({
+          emailOrName,
+          password
+        })
       }
+    );
 
-      // No localStorage token
+    const data = await response.json();
 
-      setUser(data.user);
-
-      return data.user;
-
-    } catch (error) {
-
-      console.error(
-        'Login error:',
-        error
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Login failed'
       );
-
-      throw error;
-
     }
+
+    // SAVE JWT
+    localStorage.setItem(
+      'token',
+      data.token
+    );
+
+    console.log(
+      'LOGIN TOKEN SAVED:',
+      !!localStorage.getItem('token')
+    );
+
+    setUser(data.user);
+
+    return data.user;
   };
 
   // ============================================
   // LOGOUT
   // ============================================
 
-  const logout = async () => {
-
-    try {
-
-      await fetch(
-        `${API_URL}/api/logout`,
-        {
-          method: 'POST',
-          credentials: 'include'
-        }
-      );
-
-    } catch (error) {
-
-      console.error(
-        'Logout error:',
-        error
-      );
-
-    } finally {
-
-      setUser(null);
-
-    }
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
   };
 
   return (
