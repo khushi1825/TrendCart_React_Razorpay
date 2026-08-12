@@ -37,11 +37,13 @@ router.post('/signup', async (req, res) => {
     );
 
     // Store JWT in HttpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false, // true in production with HTTPS
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
+      }
     });
 
     res.status(201).json({
@@ -101,11 +103,13 @@ router.post('/login', async (req, res) => {
     );
 
     // Store JWT in HttpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false, // true in production with HTTPS
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+    res.json({
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
+      }
     });
 
     // IMPORTANT:

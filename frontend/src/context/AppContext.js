@@ -104,7 +104,10 @@ export const AppProvider = ({ children }) => {
       const response = await fetch(
         `${API_URL}/api/cart/${user.id}`,
         {
-          credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
         }
       );
 
@@ -145,7 +148,7 @@ export const AppProvider = ({ children }) => {
 
       headers: {
         'Content-Type': 'application/json',
-        credentials: 'include'
+        Authorization: `Bearer ${token}`
       },
 
       body: JSON.stringify({
@@ -379,9 +382,8 @@ export const AppProvider = ({ children }) => {
 
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
       },
-
-      credentials: 'include',
       
       body: JSON.stringify({
         productId: product._id,
@@ -639,7 +641,9 @@ export const AppProvider = ({ children }) => {
         `${API_URL}/api/friends/${id}`,
         {
           method: 'DELETE',
-          credentials: 'include'
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
   
         }
       );
@@ -771,8 +775,8 @@ export const AppProvider = ({ children }) => {
           method: 'POST',
 
           headers: {
-            'Content-Type':
-              'application/json'
+            'Content-Type':'application/json',
+            Authorization: `Bearer ${getToken()}`
           },
 
           body: JSON.stringify({
@@ -842,7 +846,11 @@ export const AppProvider = ({ children }) => {
       const response = await fetch(
         `${API_URL}/api/voting/${postId}`,
         {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+             Authorization: `Bearer ${getToken()}`
+          },
         }
       );
 
@@ -890,7 +898,8 @@ export const AppProvider = ({ children }) => {
 
           headers: {
             'Content-Type':
-              'application/json'
+              'application/json',
+               Authorization: `Bearer ${getToken()}`
           },
 
           body: JSON.stringify({
