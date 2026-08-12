@@ -20,7 +20,10 @@ const Wishlist = () => {
       <h1 style={{ margin: '2rem 0' }}>Your Wishlist</h1>
       <div className="products-grid">
         {wishlist.map(product => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product._id}
+            product={product}
+          />
         ))}
       </div>
     </div>

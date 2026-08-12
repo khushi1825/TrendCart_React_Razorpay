@@ -25,6 +25,12 @@ const ProductCard = ({ product }) => {
 
   const handleAddForVote = async () => {
 
+      console.log("========== VOTE DEBUG ==========");
+  console.log("PRODUCT RECEIVED BY PRODUCT CARD:", product);
+  console.log("PRODUCT ID:", product._id);
+  console.log("PRODUCT NAME:", product.name);
+  console.log("PRODUCT IMAGE:", product.images?.[0]);
+  console.log("================================");
     // ============================================
     // 1. CHECK FRIENDS
     // ============================================

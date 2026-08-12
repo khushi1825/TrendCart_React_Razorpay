@@ -18,18 +18,44 @@ export const AuthProvider = ({ children }) => {
   // ============================================
 
   useEffect(() => {
-    const storedUser =
-      localStorage.getItem('trendcart_current_user');
+  const token = localStorage.getItem('token');
 
-    const token =
-      localStorage.getItem('token');
-
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-
+  if (!token) {
     setLoading(false);
-  }, []);
+    return;
+  }
+
+  const verifyUser = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        localStorage.removeItem('token');
+        setUser(null);
+        return;
+      }
+
+      setUser(data.user);
+    } catch (error) {
+      console.error('Session verification error:', error);
+      localStorage.removeItem('token');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  verifyUser();
+}, []);
 
   // ============================================
   // SIGNUP
@@ -68,11 +94,7 @@ export const AuthProvider = ({ children }) => {
         data.token
       );
 
-      // Save user
-      localStorage.setItem(
-        'trendcart_current_user',
-        JSON.stringify(data.user)
-      );
+      
 
       setUser(data.user);
 
@@ -134,10 +156,7 @@ export const AuthProvider = ({ children }) => {
       // SAVE USER
       // ========================================
 
-      localStorage.setItem(
-        'trendcart_current_user',
-        JSON.stringify(data.user)
-      );
+      
 
       setUser(data.user);
 
@@ -161,10 +180,7 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.removeItem('token');
 
-    localStorage.removeItem(
-      'trendcart_current_user'
-    );
-
+    
     setUser(null);
   };
 

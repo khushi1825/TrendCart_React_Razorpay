@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const cartItemSchema = new mongoose.Schema(
+const wishlistItemSchema = new mongoose.Schema(
   {
     productId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -18,22 +18,20 @@ const cartItemSchema = new mongoose.Schema(
       required: true
     },
 
-    image: {
-      type: String,
-      default: ''
+    images: {
+      type: [String],
+      default: []
     },
 
-    quantity: {
-      type: Number,
-      required: true,
-      min: 1,
-      default: 1
+    category: {
+      type: String,
+      default: ''
     }
   },
   { _id: false }
 );
 
-const cartSchema = new mongoose.Schema(
+const wishlistSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -43,7 +41,7 @@ const cartSchema = new mongoose.Schema(
     },
 
     items: {
-      type: [cartItemSchema],
+      type: [wishlistItemSchema],
       default: []
     }
   },
@@ -52,4 +50,7 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Cart', cartSchema);
+module.exports = mongoose.model(
+  'Wishlist',
+  wishlistSchema
+);

@@ -7,7 +7,10 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
+// =====================================================
 // CREATE RAZORPAY ORDER
+// =====================================================
+
 const createOrder = async (req, res) => {
   try {
     const { items } = req.body;
@@ -46,11 +49,11 @@ const createOrder = async (req, res) => {
       user: req.userId,
 
       items: items.map(item => ({
-        product: item._id,
+        product: item._id || item.productId,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        image: item.image
+        image: item.image || item.images?.[0] || ''
       })),
 
       totalAmount,
@@ -85,8 +88,10 @@ const createOrder = async (req, res) => {
   }
 };
 
-
+// =====================================================
 // VERIFY PAYMENT
+// =====================================================
+
 const verifyPayment = async (req, res) => {
   try {
     const {
@@ -116,6 +121,7 @@ const verifyPayment = async (req, res) => {
       });
     }
 
+    // Generate signature
     const generatedSignature =
       crypto
         .createHmac(
@@ -132,6 +138,7 @@ const verifyPayment = async (req, res) => {
 
     if (!isValid) {
       order.paymentStatus = 'failed';
+
       await order.save();
 
       return res.status(400).json({
@@ -139,6 +146,7 @@ const verifyPayment = async (req, res) => {
       });
     }
 
+    // Save payment details
     order.razorpayPaymentId =
       razorpay_payment_id;
 
@@ -169,8 +177,41 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+// =====================================================
+// GET LOGGED-IN USER ORDERS
+// =====================================================
+
+const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      user: req.userId
+    }).sort({
+      createdAt: -1
+    });
+
+    res.json({
+      success: true,
+      orders
+    });
+
+  } catch (error) {
+    console.error(
+      'Get my orders error:',
+      error
+    );
+
+    res.status(500).json({
+      error: 'Failed to fetch orders'
+    });
+  }
+};
+
+// =====================================================
+// EXPORT CONTROLLERS
+// =====================================================
 
 module.exports = {
   createOrder,
-  verifyPayment
+  verifyPayment,
+  getMyOrders
 };
