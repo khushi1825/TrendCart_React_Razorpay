@@ -25,13 +25,13 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://trend-cart-react-razorpay-m5wq.vercel.app'
+  'https://trend-cart-react-razorpay-3x3v.vercel.app'
 ];
 
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://trend-cart-react-razorpay-m5wq.vercel.app'
+    'https://trend-cart-react-razorpay-3x3v.vercel.app'
   ],
   credentials: true
 }));
